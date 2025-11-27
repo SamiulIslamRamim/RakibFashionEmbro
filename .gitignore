@@ -1,4 +1,14 @@
-node_modules
-.env
-dist
+#Prisma Client generated files
 /src/generated/prisma
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Dependencies
+/node_modules
+
+# TypeScript build output
+/dist
+
