@@ -1,37 +1,16 @@
 {
   "extends": "@tsconfig/node22/tsconfig.json",
   "compilerOptions": {
-    // File Layout
-    "rootDir": "./src",
-    "outDir": "./dist",
-    // Environment Settings
+    "target": "es2022",
     "module": "nodenext",
     "moduleResolution": "nodenext",
-    "target": "es2022",
+    "outDir": "./dist",
+    "rootDir": "./src",
     "types": [],
-
-
-    // Other Outputs
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
-
-    // Stricter Typechecking Options
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-
-
-    // Recommended Options
     "strict": true,
-    "jsx": "react-jsx",
-    "verbatimModuleSyntax": true,
-    "isolatedModules": true,
-    "noUncheckedSideEffectImports": true,
-    "moduleDetection": "force",
-    "skipLibCheck": true,
     "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
+
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/users/schema.ts"],
   "exclude": ["dist"]
 }

@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 9001;
 //note: middlewares (to be used later)
 // app.use(helmet());
 // app.use(cors({ origin: "http://localhost:5173", credentials: true })); 
-// app.use(express.json());
+app.use(express.json());
 // app.use(cookieParser());
 
 // Routes
@@ -34,7 +34,7 @@ app.use("/users", users);
 //Home
 
 
-//Success Message
+//note: Success Message
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`);
 });

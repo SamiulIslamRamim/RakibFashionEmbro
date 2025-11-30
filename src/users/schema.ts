@@ -1,16 +1,67 @@
 import { z } from "zod";
+//Note: userType
+export const UserSchema = z.object({
+    id: z.string().uuid(),
+    firstName: z.string().min(3, "First name must be at least 3 characters."),
+    lastName: z.string().min(3, "Last name must be at least 3 characters."),
+    email: z.string().email("Invalid email format."),
+    // Note: We validate the HASH, which must be a string. 
+    passwordHash: z.string().min(60, "Invalid password hash length."), 
+    isVerified: z.boolean(),
+    verificationCode: z.string().min(6, "Verification code is required."),
+    verificationExpiry: z.date(),
+    createdAt: z.date(),
+    updatedAt: z.date(),
+});
 
+export type UserType = z.infer<typeof UserSchema>;
+
+
+//Note: signup input
 export const SignupInputSchema = z.object({
     firstName: z.string().trim().min(3, "First name is required."),
     lastName: z.string().trim().min(3, "Last name is required."),
     email: z.string().email("A valid email address is required."),
     // Validate the PLAIN password before hashing
-   password: z.string()
-  .min(8, "Password must be at least 8 characters long.")
+   password: z.string() 
+  .min(8, "Password must be at least 8 characters long.") 
   .max(30, "Password is too long.")
   .regex(/[A-Z]/, "Password must contain at least one uppercase letter.")
   .regex(/[0-9]/, "Password must contain at least one digit.")
   .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character.")  
-});
+});  
 
 export type SignupInputType = z.infer<typeof SignupInputSchema>;
+
+
+
+
+//Note: Public data with hiding sensitive info // Import the base schema
+
+export const UserPublicSchema = UserSchema.omit({
+    passwordHash: true,
+    verificationCode: true,
+    verificationExpiry: true,
+});
+
+export type UserPublicType = z.infer<typeof UserPublicSchema>;
+
+
+
+
+//Note: updae partial data
+// 1. Omit the mandatory database fields
+const UserUpdatableFields = UserSchema.omit({
+    id: true, 
+    email: true, // Email is usually updated via a different, secure flow
+    passwordHash: true, // Handled by a separate 'change password' flow
+    createdAt: true,
+    updatedAt: true,
+    verificationCode: true,
+    verificationExpiry: true,
+});
+
+// 2. Make the remaining fields optional for updates
+export const UserUpdateInputSchema = UserUpdatableFields.partial(); 
+
+export type UserUpdateInputType = z.infer<typeof UserUpdateInputSchema>;
