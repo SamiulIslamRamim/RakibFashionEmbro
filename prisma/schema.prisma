@@ -15,8 +15,8 @@ model User {
   email               String    @unique
   passwordHash        String  //todo: google auth
   isVerified          Boolean   @default(false)
-  verificationCode    String
-  verificationExpiry  DateTime
+  verificationCode    String?
+  verificationExpiry  DateTime?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt 
 

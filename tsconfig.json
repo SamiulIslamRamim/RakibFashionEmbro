@@ -9,6 +9,8 @@
     "types": [],
     "strict": true,
     "esModuleInterop": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
 
   },
   "include": ["src/**/*.ts", "src/users/schema.ts"],

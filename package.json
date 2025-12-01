@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "not sure till now....stay tuned",
   "type": "module",
-  "main": "app.js",
+  "main": "./src/app.ts",
   "scripts": {
     "start": "nodemon --exec tsx ./src/app.ts",
-    "dev": "nodemon --watch 'src/**/*.ts' --exec 'tsx' ./src/app.ts",
+    "dev": "nodemon --watch /src/app.ts",
     "build": "tsc",
     "type-check": "tsc --noEmit",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -55,4 +55,5 @@
   "imports": {
     "#*": "./src/*"
   }
+
 }

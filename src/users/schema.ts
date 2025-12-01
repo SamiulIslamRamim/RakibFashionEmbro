@@ -34,9 +34,24 @@ export const SignupInputSchema = z.object({
 export type SignupInputType = z.infer<typeof SignupInputSchema>;
 
 
+//Note: login input
+export const LoginInputSchema = z.object({
+    email: z.string().email("A valid email address is required."),
+    password: z.string().min(8, "Password is required."),
+});
+
+export type LoginInputType = z.infer<typeof LoginInputSchema>;
 
 
-//Note: Public data with hiding sensitive info // Import the base schema
+//Note: verify input
+export const VerifyInputSchema = z.object({
+    email: z.string().email("A valid email address is required."),
+    code: z.string().length(6, "Verification code must be 6 digits."),
+});
+
+export type VerifyInputType = z.infer<typeof VerifyInputSchema>;
+
+//Note: Public data with hiding sensitive info
 
 export const UserPublicSchema = UserSchema.omit({
     passwordHash: true,

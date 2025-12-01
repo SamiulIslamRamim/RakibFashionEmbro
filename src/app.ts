@@ -1,13 +1,13 @@
 // index.js
 import express from "express";
 import dotenv from "dotenv";
-import users from "#users/routes.js";
+import users from "#users/routes.ts";
+import cookieParser from "cookie-parser";
+import helmet from "helmet";
+import cors from "cors";
+// import bodyParser from "body-parser";
 
-//note: later use these middlewares
-// import helmet from "helmet";
-// import cors from "cors";
-// import cookieParser from "cookie-parser";
-// import authRoutes from "./routes/auth.js"; // todo: have to add Note the .js!
+// note: later use these middlewares
 
 dotenv.config();
 
@@ -17,21 +17,23 @@ const PORT = process.env.PORT || 9001;
 
 
 //note: middlewares (to be used later)
-// app.use(helmet());
-// app.use(cors({ origin: "http://localhost:5173", credentials: true })); 
+app.use(helmet());
+app.use(cors({ origin: "http://localhost:5173", credentials: true })); 
 app.use(express.json());
-// app.use(cookieParser());
+app.use(cookieParser());
+// app.use(bodyParser.json());
 
 // Routes
+
+//Home Route
 app.get("/", (req, res) => {
-  // res.send("Hello World!");
+ res.send("Hello World!");
   console.log("Response sent");
 });
 
+// User Routes/Auth
 app.use("/users", users);
 
-
-//Home
 
 
 //note: Success Message
