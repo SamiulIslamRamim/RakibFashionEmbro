@@ -7,17 +7,15 @@ datasource db {
   provider = "postgresql"
 }
 
-
 model User {
-  id                  String    @id @default(uuid())
-  firstName           String
-  lastName            String
-  email               String    @unique
-  passwordHash        String  //todo: google auth
-  isVerified          Boolean   @default(false)
-  verificationCode    String?
-  verificationExpiry  DateTime?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt 
-
+  id                 String    @id @default(uuid())
+  firstName          String
+  lastName           String
+  email              String    @unique
+  passwordHash       String
+  isVerified         Boolean   @default(false)
+  verificationCode   String?
+  verificationExpiry DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 }

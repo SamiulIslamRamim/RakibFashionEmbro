@@ -5,7 +5,7 @@ export const UserSchema = z.object({
     firstName: z.string().min(3, "First name must be at least 3 characters."),
     lastName: z.string().min(3, "Last name must be at least 3 characters."),
     email: z.string().email("Invalid email format."),
-    // Note: We validate the HASH, which must be a string. 
+    // Note: We validate the HASH, which must be a string.
     passwordHash: z.string().min(60, "Invalid password hash length."), 
     isVerified: z.boolean(),
     verificationCode: z.string().min(6, "Verification code is required."),
@@ -15,6 +15,19 @@ export const UserSchema = z.object({
 });
 
 export type UserType = z.infer<typeof UserSchema>;
+
+
+
+//Note: Public data with hiding sensitive info
+
+export const UserPublicSchema = UserSchema.omit({
+    passwordHash: true,
+    verificationCode: true,
+    verificationExpiry: true,
+});
+
+export type UserPublicType = z.infer<typeof UserPublicSchema>;
+
 
 
 //Note: signup input
@@ -51,15 +64,6 @@ export const VerifyInputSchema = z.object({
 
 export type VerifyInputType = z.infer<typeof VerifyInputSchema>;
 
-//Note: Public data with hiding sensitive info
-
-export const UserPublicSchema = UserSchema.omit({
-    passwordHash: true,
-    verificationCode: true,
-    verificationExpiry: true,
-});
-
-export type UserPublicType = z.infer<typeof UserPublicSchema>;
 
 
 

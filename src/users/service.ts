@@ -25,7 +25,8 @@ export const registerUserService = async (data: SignupInputType) => {
             verificationCode: verificationCode,
             verificationExpiry: verificationExpiry,
         },
-        select: { id: true, email: true, firstName: true, passwordHash: true } //note: Need passwordHash for later logic/selects
+        select: { id: true, email: true, firstName: true, passwordHash: true } 
+    
     });
 
     // Send the verification email (fire and forget)

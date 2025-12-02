@@ -25,7 +25,7 @@ const cookieOptions = {
 
 //Signup Controller
 export const signupController = async (req: Request, res: Response) => {
-    try {
+    try {   
         // 1. Validate Input using Zod
         const parsed = SignupInputSchema.safeParse(req.body);
         if (!parsed.success) {
