@@ -25,21 +25,9 @@ users.get("/login", (req, res) => {
 });
 users.post("/login", loginController); 
 // Export the single router inst
+
+
+
 users.post("/verify", verifyController); 
-// ance
+// console.log("going to Users router.");
 export default users;
-
-
-
-
-// 1. SIGNUP
-users.get("/signup", (req, res) => {
-  res.status(200).send("Welcome to the Sign Up page.");
-});
-
-// 2. LOGIN
-users.get("/login", (req, res) => {
-  res.status(200).send("Welcome to the LOGIN page.");
-});
-
-// 3. VERIFY

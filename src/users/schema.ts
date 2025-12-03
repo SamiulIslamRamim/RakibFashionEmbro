@@ -5,8 +5,7 @@ export const UserSchema = z.object({
     firstName: z.string().min(3, "First name must be at least 3 characters."),
     lastName: z.string().min(3, "Last name must be at least 3 characters."),
     email: z.string().email("Invalid email format."),
-    // Note: We validate the HASH, which must be a string.
-    passwordHash: z.string().min(60, "Invalid password hash length."), 
+    passwordHash: z.string(), 
     isVerified: z.boolean(),
     verificationCode: z.string().min(6, "Verification code is required."),
     verificationExpiry: z.date(),
@@ -28,6 +27,11 @@ export const UserPublicSchema = UserSchema.omit({
 
 export type UserPublicType = z.infer<typeof UserPublicSchema>;
 
+//Note: minimal user data
+export const UserMinimalSchema = UserSchema.pick({
+    id: true,
+    email: true,
+});
 
 
 //Note: signup input
@@ -35,13 +39,9 @@ export const SignupInputSchema = z.object({
     firstName: z.string().trim().min(3, "First name is required."),
     lastName: z.string().trim().min(3, "Last name is required."),
     email: z.string().email("A valid email address is required."),
+    isVerified: z.boolean().optional(),
     // Validate the PLAIN password before hashing
-   password: z.string() 
-  .min(8, "Password must be at least 8 characters long.") 
-  .max(30, "Password is too long.")
-  .regex(/[A-Z]/, "Password must contain at least one uppercase letter.")
-  .regex(/[0-9]/, "Password must contain at least one digit.")
-  .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character.")  
+   passwordHash: z.string().min(8, "Password must be at least 8 characters long."),
 });  
 
 export type SignupInputType = z.infer<typeof SignupInputSchema>;
@@ -50,7 +50,7 @@ export type SignupInputType = z.infer<typeof SignupInputSchema>;
 //Note: login input
 export const LoginInputSchema = z.object({
     email: z.string().email("A valid email address is required."),
-    password: z.string().min(8, "Password is required."),
+    passwordHash: z.string().min(8, "Password is required."),
 });
 
 export type LoginInputType = z.infer<typeof LoginInputSchema>;
