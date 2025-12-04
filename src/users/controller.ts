@@ -3,14 +3,14 @@ import {
     SignupInputSchema, 
     LoginInputSchema, 
     VerifyInputSchema,
-    UserPublicSchema,
+    UserUpdateInputSchema,
     UserMinimalSchema
 } from "#users/schema.ts"; 
  // Also import the type for better function signature
 import { registerUserService, 
     loginUserService, 
-    verifyUserService } from "#users/service.ts";
-import { signToken } from "#utils/jwt.ts"; 
+    verifyUserService,updateUserService } from "#users/service.ts";
+// import { signToken } from "#utils/jwt.ts"; 
 import type { SignupInputType, VerifyInputType } from "#users/schema.ts";
 import prisma from "#utils/db.ts";
 
@@ -66,39 +66,38 @@ export const signupController = async (req: Request, res: Response) => {
 // Login Controller
 export const loginController = async (req: Request, res: Response) => {
     try {
-        // 1. Validate Input
         const parsed = LoginInputSchema.safeParse(req.body);
         if (!parsed.success) {
             return res.status(400).json({ message: "Invalid input format." });
         }
-        const { email, passwordHash } = parsed.data;
-                console.log("grabbed data from login form: Controller");
-        // 2. Call Service Layer (Handles user find, password check, and token generation)
-        const { user, token } = await loginUserService(email, passwordHash);
-        console.log("check jwt token using email & pass: Controller");
-        // 3. Set Secure HTTP-Only Cookie
-        res.cookie('access_token', token, cookieOptions);
-        console.log("cookie set in: Controller");
 
-        // 4. Respond (stripping sensitive data)
-        const publicUser = UserPublicSchema.parse(user);
-        console.log("done try: Controller");
-        return res.status(200).json({ 
+        const { email, password } = parsed.data;
+
+        // 2. Call service
+        const { user, accessToken, refreshToken } =
+            await loginUserService(email, password);
+
+        // 3. Strip sensitive fields
+        // const publicUser = UserPublicSchema.parse(user);
+
+        // 4. Respond
+        return res.status(200).json({
             message: "Login successful.",
-            user: publicUser,
+            // user: publicUser,
+            accessToken,
+            refreshToken
         });
 
-    } catch (error) {
-        console.log("error loading in: Controller");
-        // 4. Handle Specific Errors
-        if (error instanceof Error) {
-            if (error.message.includes("Invalid credentials")) {
-                 return res.status(401).json({ message: "Invalid email or password." });
-            }
-            if (error.message.includes("Account not verified")) {
-                 return res.status(403).json({ message: error.message });
-            }
+    } catch (error: any) {
+
+        if (error.message?.includes("Invalid credentials")) {
+            return res.status(401).json({ message: "Invalid email or password." });
         }
+
+        if (error.message?.includes("Account not verified")) {
+            return res.status(403).json({ message: error.message });
+        }
+
         console.error("Login error:", error);
         return res.status(500).json({ message: "Internal server error." });
     }
@@ -122,8 +121,8 @@ export const verifyController = async (req: Request, res: Response) => {
         const user = await verifyUserService(email, code);
         console.log("User verified: from controller");
         // 3. Log user in immediately after verification (Generate and set JWT)
-        const token = signToken(user.id); // Generate the JWT
-        res.cookie('access_token', token, cookieOptions); // Set the cookie
+        // const token = signToken(user.id); // Generate the JWT
+        // res.cookie('access_token', token, cookieOptions); // Set the cookie
                     console.log("cookie set");
         // 4. Respond
         return res.status(200).json({ 
@@ -145,5 +144,53 @@ export const verifyController = async (req: Request, res: Response) => {
         }
         console.error("Verification error:", error);
         return res.status(500).json({ message: "Internal server error." });
+    }
+};
+
+
+
+
+// Assuming you have a custom Request interface that includes userId from middleware
+interface AuthenticatedRequest extends Request {
+    userId?: string; 
+}
+
+export const updateController = async (req: AuthenticatedRequest, res: Response) => {
+    // 1. Get User ID from authentication middleware
+    const userId = req.userId; 
+    if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized: User ID not found.' });
+    }
+
+    try {
+        // 2. Validate and Parse the Request Body
+        // This validates that the fields exist and are strings (but allows partial/optional fields)
+        const updateData = UserUpdateInputSchema.parse(req.body);
+
+        // 3. Check if any fields were actually passed
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({ message: 'No fields provided for update.' });
+        }
+
+        // 4. Call the Service to perform the update
+        const updatedUser = await updateUserService(userId, updateData);
+
+        // 5. Send successful response with updated user data
+        return res.status(200).json({ 
+            message: 'Profile updated successfully.', 
+            user: updatedUser 
+        });
+
+    } catch (error) {
+        // Handle Zod validation errors
+        if (error instanceof Error && 'issues' in error) {
+            return res.status(400).json({ 
+                message: 'Validation failed.', 
+                errors: (error as any).issues 
+            });
+        }
+        
+        console.error('Update Profile Error:', error);
+        return res.status(500).json({ message: 'Failed to update profile due to a server error.' });
     }
 };

@@ -3,7 +3,8 @@ import express from "express";
 import { 
     signupController, 
     loginController, 
-    verifyController 
+    verifyController,
+    updateController 
 } from "#users/controller.ts"; 
 
 // You need ONE main router to export
@@ -19,10 +20,10 @@ users.post("/signup", signupController);
 
 
 // Define routes on the main router
-users.get("/login", (req, res) => {
-  console.log("This is Login Router Working");
-  res.status(200).send("Welcome to the LOGIN page. Please submit your data via POST.");
-});
+// users.get("/login", (req, res) => {
+//   console.log("This is Login Router Working");
+//   res.status(200).send("Welcome to the LOGIN page. Please submit your data via POST.");
+// });
 users.post("/login", loginController); 
 // Export the single router inst
 
@@ -30,4 +31,11 @@ users.post("/login", loginController);
 
 users.post("/verify", verifyController); 
 // console.log("going to Users router.");
-export default users;
+
+
+
+const settings = express.Router();
+settings.patch("/update-profile/:id", updateController);
+
+// Export the single router instance
+export {users, settings};

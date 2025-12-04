@@ -2,8 +2,10 @@ import prisma from "#utils/db.ts";
 import * as bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { sendOtp } from "#utils/email.ts";
-import { signToken } from "#utils/jwt.ts";
-import type { SignupInputType } from "#users/schema.ts";
+import { signAccessToken, signRefreshToken, } from "#utils/jwt.ts";
+import type { SignupInputType,
+              UserUpdateInputType
+ } from "#users/schema.ts";
 
 // SIGNUP SERVICE 
 export const registerUserService = async (data: SignupInputType) => {
@@ -35,43 +37,38 @@ export const registerUserService = async (data: SignupInputType) => {
 
 // LOGIN SERVICE
 export const loginUserService = async (email: string, passwordHash: string) => {
-    // 1. Find the user by email
-    const user = await prisma.user.findUnique({ 
-        
+    // 1. Find user
+    const user = await prisma.user.findUnique({
         where: { email },
-        // IMPORTANT: Select the passwordHash explicitly
-        select: { 
-            id: true, 
-            email: true, 
-            firstName: true, 
+        select: {
+            id: true,
+            email: true,
+            firstName: true,
             passwordHash: true,
-            isVerified: true 
-        } 
+            isVerified: true
+        }
     });
-    console.log('finding user by email in: service');
 
     if (!user) {
-        throw new Error("Invalid credentials."); 
+        throw new Error("Invalid credentials");
     }
 
-    // 2. Verify Password
-    const passwordMatch = await bcrypt.compare(user.passwordHash, passwordHash);
-    console.log("comparing password in: service");
+    // 2. Compare password
+    const passwordMatch = await bcrypt.compare(passwordHash, user.passwordHash);
     if (!passwordMatch) {
-        console.log("not matched password in: service");
-        throw new Error("Invalid credentials.");
+        throw new Error("Invalid credentials");
     }
-    console.log("matched password in: service");
-    // 3. (Optional but recommended) Check if email is verified
+
+    // 3. Check verified
     if (!user.isVerified) {
         throw new Error("Account not verified. Please check your email.");
-        //info: add resend verification code logic
     }
 
-    // 4. JWT
-    const token = signToken(user.id);
-    console.log("created jwt & end of service: loginUserService");
-    return { user, token };
+    // 4. Generate tokens
+    const accessToken = signAccessToken(user.id.toString());
+    const refreshToken = signRefreshToken(user.id.toString());
+
+    return { user, accessToken, refreshToken };
 };
 
 // VERIFY SERVICE
@@ -106,3 +103,23 @@ export const verifyUserService = async (email: string, verificationCode: string)
     return verifiedUser;
 };
 
+
+
+export const updateUserService = async (
+    userId: string, 
+    data: UserUpdateInputType
+) => {
+    // 1. Prisma update operation
+    const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: data, // Prisma handles partial updates beautifully
+        select: { // Select only public fields for the response
+            id: true,
+            firstName: true,
+            lastName: true,
+        },
+    });
+
+    // 2. Return the clean public data
+    return updatedUser;
+};

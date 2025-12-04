@@ -1,7 +1,7 @@
 // index.js
 import express from "express";
 import dotenv from "dotenv";
-import users from "#users/routes.ts";
+import {users, settings} from "#users/routes.ts";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import cors from "cors";
@@ -33,7 +33,7 @@ app.get("/", (req, res) => {
 
 // User Routes/Auth
 app.use("/users", users);
-
+app.use("/settings", settings);
 
 
 //note: Success Message

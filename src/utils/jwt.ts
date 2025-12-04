@@ -1,5 +1,21 @@
 import jwt from "jsonwebtoken";
 
-export const signToken = (userId: string) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: "12h" });
+const SECRET = process.env.JWT_SECRET!;
+
+// Access Token — short lived
+export const signAccessToken = (userId: string) => {
+  return jwt.sign(
+    { userId, type: "access" },
+    SECRET,
+    { expiresIn: "15m" }
+  );
+};
+
+// Refresh Token — long lived
+export const signRefreshToken = (userId: string) => {
+  return jwt.sign(
+    { userId, type: "refresh" },
+    SECRET,
+    { expiresIn: "7d" }
+  );
 };
