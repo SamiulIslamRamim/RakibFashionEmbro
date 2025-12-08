@@ -31,7 +31,7 @@ app.get("/", (req, res) => {
   console.log("Response sent");
 });
 
-// User Routes/Auth
+// app.use('auth',authJwtMiddleware);
 app.use("/users", users);
 app.use("/settings", settings);
 

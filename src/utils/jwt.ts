@@ -16,6 +16,6 @@ export const signRefreshToken = (userId: string) => {
   return jwt.sign(
     { userId, type: "refresh" },
     SECRET,
-    { expiresIn: "7d" }
+    { expiresIn: "12h" }
   );
 };

@@ -20,7 +20,6 @@ export const registerUserService = async (data: SignupInputType) => {
             firstName: data.firstName,
             lastName: data.lastName,
             email: data.email,
-            // isVerified: data.isVerified || false,
             passwordHash: passwordHash,
             verificationCode: verificationCode,
             verificationExpiry: verificationExpiry,
@@ -104,12 +103,14 @@ export const verifyUserService = async (email: string, verificationCode: string)
 };
 
 
+//UPDATE SERVICE
 
 export const updateUserService = async (
     userId: string, 
     data: UserUpdateInputType
 ) => {
     // 1. Prisma update operation
+    console.log("userId in service:", userId);
     const updatedUser = await prisma.user.update({
         where: { id: userId },
         data: data, // Prisma handles partial updates beautifully
@@ -119,7 +120,6 @@ export const updateUserService = async (
             lastName: true,
         },
     });
-
-    // 2. Return the clean public data
+    console.log("Updated user in service");
     return updatedUser;
 };

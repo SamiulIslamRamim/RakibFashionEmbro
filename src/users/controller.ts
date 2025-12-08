@@ -1,28 +1,11 @@
 import type { Request, Response } from "express";
-import { 
-    SignupInputSchema, 
-    LoginInputSchema, 
-    VerifyInputSchema,
-    UserUpdateInputSchema,
-    UserMinimalSchema
-} from "#users/schema.ts"; 
- // Also import the type for better function signature
-import { registerUserService, 
-    loginUserService, 
-    verifyUserService,updateUserService } from "#users/service.ts";
-// import { signToken } from "#utils/jwt.ts"; 
+import { SignupInputSchema, LoginInputSchema, VerifyInputSchema, UserUpdateInputSchema, UserMinimalSchema } from "#users/schema.ts"; 
+import { registerUserService, loginUserService, verifyUserService, updateUserService } from "#users/service.ts";
 import type { SignupInputType, VerifyInputType } from "#users/schema.ts";
 import prisma from "#utils/db.ts";
+import type { AuthenticatedRequest } from "#utils/auth.ts";
 
-// Cookie Configuration (12 hours to match JWT expiry in jwt.ts)
-const MAX_AGE_MS = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
 
-const cookieOptions = {
-    httpOnly: true, // Crucial: Prevents client-side JS access (XSS defense)
-    secure: process.env.NODE_ENV === "production", // Only send over HTTPS in production
-    sameSite: 'strict' as const, // CSRF defense
-    maxAge: MAX_AGE_MS,
-};
 
 
 //Signup Controller
@@ -33,7 +16,6 @@ export const signupController = async (req: Request, res: Response) => {
        
                    // console.log("Parsed data:", parsed);
 
-
           const existingUser = await prisma.user.findUnique({ where: { email:parsed.data?.email } });
             if (existingUser) {
                 throw new Error("Email already registered."); 
@@ -41,9 +23,6 @@ export const signupController = async (req: Request, res: Response) => {
 
             //console.log("Parsed data:", parsed);
         const newUser = await registerUserService(parsed?.data as SignupInputType); 
-
-        // 3. Respond (stripping sensitive data)
-        // const publicUser = UserPublicSchema.parse(newUser);
 
         return res.status(201).json({ 
             message: "User registered successfully. Check email for verification code.",
@@ -62,7 +41,6 @@ export const signupController = async (req: Request, res: Response) => {
     }
 };
 
-
 // Login Controller
 export const loginController = async (req: Request, res: Response) => {
     try {
@@ -76,9 +54,6 @@ export const loginController = async (req: Request, res: Response) => {
         // 2. Call service
         const { user, accessToken, refreshToken } =
             await loginUserService(email, password);
-
-        // 3. Strip sensitive fields
-        // const publicUser = UserPublicSchema.parse(user);
 
         // 4. Respond
         return res.status(200).json({
@@ -120,10 +95,6 @@ export const verifyController = async (req: Request, res: Response) => {
         // 2. Call Service Layer (Handles code check, expiry check, and database update)
         const user = await verifyUserService(email, code);
         console.log("User verified: from controller");
-        // 3. Log user in immediately after verification (Generate and set JWT)
-        // const token = signToken(user.id); // Generate the JWT
-        // res.cookie('access_token', token, cookieOptions); // Set the cookie
-                    console.log("cookie set");
         // 4. Respond
         return res.status(200).json({ 
             message: "Account successfully verified and logged in.",
@@ -150,47 +121,35 @@ export const verifyController = async (req: Request, res: Response) => {
 
 
 
-// Assuming you have a custom Request interface that includes userId from middleware
-interface AuthenticatedRequest extends Request {
-    userId?: string; 
-}
-
+// update Controller
 export const updateController = async (req: AuthenticatedRequest, res: Response) => {
-    // 1. Get User ID from authentication middleware
-    const userId = req.userId; 
+    const userId = req.userId;
+    console.log("userId in controller:", userId);
     if (!userId) {
-        return res.status(401).json({ message: 'Unauthorized: User ID not found.' });
+        return res.status(401).send({ message: 'Unauthorized or invalid.' });
     }
-
     try {
-        // 2. Validate and Parse the Request Body
-        // This validates that the fields exist and are strings (but allows partial/optional fields)
-        const updateData = UserUpdateInputSchema.parse(req.body);
+        const updateData = UserUpdateInputSchema.parse(req.body); 
 
-        // 3. Check if any fields were actually passed
         if (Object.keys(updateData).length === 0) {
-            return res.status(400).json({ message: 'No fields provided for update.' });
+            return res.status(400).send({ message: 'No fields provided for update.' });
         }
 
-        // 4. Call the Service to perform the update
-        const updatedUser = await updateUserService(userId, updateData);
-
-        // 5. Send successful response with updated user data
-        return res.status(200).json({ 
-            message: 'Profile updated successfully.', 
-            user: updatedUser 
-        });
-
-    } catch (error) {
-        // Handle Zod validation errors
-        if (error instanceof Error && 'issues' in error) {
-            return res.status(400).json({ 
-                message: 'Validation failed.', 
-                errors: (error as any).issues 
-            });
-        }
+        const user = await updateUserService(userId, updateData);
         
-        console.error('Update Profile Error:', error);
-        return res.status(500).json({ message: 'Failed to update profile due to a server error.' });
+        res.status(200).send(user);
+
+    } catch (error: any) {
+        if (error.issues) {
+            return res.status(400).send({ 
+                error: 'Validation failed.', 
+                details: error.issues 
+            });
+        } 
+        if (error.message && error.message.includes("not found")) {
+            return res.status(404).send({ error: "User not found." });
+        }
+        console.error("Error updating user:", error);
+        res.status(500).send({ error: 'Internal server error.' });
     }
 };

@@ -3,14 +3,12 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Configuration for the SMTP transporter
 const transporter = nodemailer.createTransport({
-    // ⚠️ IMPORTANT: Replace with your actual SMTP details
     host: process.env.SMTP_HOST || 'smtp.sendgrid.net', // e.g., 'smtp.gmail.com' or SendGrid/Mailgun host
     port: parseInt(process.env.SMTP_PORT || '587', 10), 
     secure: false, // true for 465, false for other ports (like 587)
     auth: {
-        user: process.env.SMTP_USER, // Your SMTP username (usually your email address or API key name)
+        user: process.env.SMTP_USER, // (usually your email address or API key name)
         pass: process.env.SMTP_PASS, // Your SMTP password or API key
     },
 });
@@ -21,9 +19,6 @@ interface SendOtpParams {
     firstName: string;
 }
 
-/**
- * Sends a verification code using Nodemailer.
- */
 export const sendOtp = async ({ to, otpCode, firstName }: SendOtpParams): Promise<void> => {
     // Development Mode Check (Keeps your log functionality)
     if (process.env.NODE_ENV !== 'production') {
