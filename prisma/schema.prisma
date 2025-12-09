@@ -19,3 +19,222 @@ model User {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 }
+
+
+
+/**
+
+//note: Experimental feature
+
+enum Role {
+  PRODUCTION_MANAGER
+  SUPERVISOR
+  CUTTING_HELPER
+  MACHINE_OPERATOR
+  MACHINE_HELPER
+  FACTORY_OVERSEER
+}
+
+enum ShiftType {
+  DAY
+  NIGHT
+}
+
+enum AttendanceStatus {
+  ABSENT          // Deducts salary
+  SICK_LEAVE
+  FESTIVAL_LEAVE
+}
+
+enum MachineStatus {
+  ACTIVE
+  MAINTENANCE
+  INACTIVE
+}
+
+enum PaymentType {
+  WEEKLY_ADVANCE
+  MONTHLY_SALARY_FINAL
+  BONUS
+}
+
+enum ExpenseCategory {
+  SNACKS
+  RAW_MATERIALS // Threads, Needles, Backing
+  MAINTENANCE   // General Factory Maintenance (non-machine specific)
+  UTILITY_BILL  // Current Bill
+  OTHER
+}
+
+//INFO: (User, Profile, Machine)
+
+model User {  //fix: User vul disi
+  id                     String             @id @default(uuid())
+  firstName              String
+  lastName               String
+  email                  String             @unique
+  passwordHash           String
+  role                   Role               @default(MACHINE_HELPER)
+  isActive               Boolean            @default(true) 
+  isVerified             Boolean   @default(false)
+  verificationCode       String?
+  verificationExpiry     DateTime?
+  // Relations
+  profile                Profile?
+  assignments            MachineAssignment[]
+  rosterEntries          ShiftRoster[]      // NEW: Links to Clock In/Out sessions
+  payments               Payment[]
+  
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+}
+
+model Profile {
+  id                     String             @id @default(uuid())
+  userId                 String             @unique
+  user                   User               @relation(fields: [userId], references: [id])
+  
+  // Financials
+  baseSalary             Decimal            @default(0)
+  
+  // Personal & Contact Info
+  bloodGroup             String?
+  phone                  String?
+  emergencyContact       String?
+  presentAddress         String?
+  permanentAddress       String?
+  joiningDate            DateTime           @default(now())
+}
+
+model Machine {
+  id                     String             @id @default(uuid())
+  machineNumber          String             @unique
+  headCount              Int                @default(0)
+  status                 MachineStatus      @default(ACTIVE)
+
+  assignments            MachineAssignment[]
+  maintenanceLogs        Maintenance[]
+  productionLogs          ProductionLog[]     // This completes the one-to-many relationship
+}
+
+//INFO: Attendance, Production & Roster
+model ShiftRoster {
+  id                      String             @id @default(uuid())
+
+  userId                  String
+  user                    User               @relation(fields: [userId], references: [id])
+
+  clockIn                 DateTime           @default(now())
+  clockOut                DateTime?          // Null if user is still clocked in
+  
+  shift                   ShiftType          // DAY or NIGHT
+  
+  // Calculation Fields
+  calculatedDurationHours Float?             // Calculated by service layer on Clock Out
+  overtimeHours           Float              @default(0)
+  
+  // Only record status if they are NOT working (e.g., Absent/Leave)
+  status                  AttendanceStatus?  
+  
+  remarks                 String?
+//fix: production for machine
+  // Relations to Production (One Roster entry can link to many ProductionLogs)
+  operatorProduction      ProductionLog[]    @relation("OperatorProduction")
+  helperProduction        ProductionLog[]    @relation("HelperProduction")
+  
+  // Indexing for fast lookups by user and date
+  @@unique([userId, clockIn]) 
+  @@index([userId, clockIn])
+}
+
+// ProductionLog now links directly to the Roster entry that covers the working time.
+model ProductionLog {
+  id                     String             @id @default(uuid())
+  
+  date                   DateTime           @default(now())
+
+  // Link to the Operator's Roster entry (their time log)
+  operatorRosterId       String
+  operatorRoster         ShiftRoster        @relation("OperatorProduction", fields: [operatorRosterId], references: [id])
+
+  // Link to the Helper's Roster entry (optional)
+  helperRosterId         String?
+  helperRoster           ShiftRoster?       @relation("HelperProduction", fields: [helperRosterId], references: [id])
+  
+  // The Machine involved
+  machineId              String
+  machine                Machine            @relation(fields: [machineId], references: [id])
+  
+  // The Metrics
+  stitchCount            Int
+  stopCount              Int?
+  designName             String?
+
+  // Indexing to find production by the roster/shift
+  @@index([operatorRosterId, machineId]) 
+}
+
+//INFO: Financial & Asset Logs
+model Payment {
+  id                     String             @id @default(uuid())
+  date                   DateTime           @default(now())
+  
+  userId                 String
+  user                   User               @relation(fields: [userId], references: [id])
+  
+  amount                 Decimal
+  type                   PaymentType
+  notes                  String?
+}
+
+// Factory Expenses (General Costs)
+model Expense {
+  id                     String             @id @default(uuid())
+  date                   DateTime           @default(now())
+  
+  category               ExpenseCategory
+  itemName               String
+  amount                 Decimal
+}
+
+// Machine-Specific Maintenance Log
+model Maintenance {
+  id                     String             @id @default(uuid())
+  
+  machineId              String
+  machine                Machine            @relation(fields: [machineId], references: [id])
+  
+  date                   DateTime           @default(now())
+  
+  cost                   Decimal
+  reason                 String
+  technician             String?
+}
+
+// Global Factory Calendar
+model Holiday {
+  id                     String             @id @default(uuid())
+  date                   DateTime           @unique
+  name                   String
+}
+
+// Machine Assignments
+model MachineAssignment {
+  id                     String             @id @default(uuid())
+  
+  machineId              String
+  machine                Machine            @relation(fields: [machineId], references: [id])
+  
+  userId                 String
+  user                   User               @relation(fields: [userId], references: [id])
+  
+  assignedAt             DateTime           @default(now())
+  endedAt                DateTime?
+  isActive               Boolean            @default(true)
+
+  @@index([userId, isActive])
+}
+
+
+
+**/

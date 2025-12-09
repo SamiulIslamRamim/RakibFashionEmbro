@@ -1,6 +1,6 @@
 // routes/mainRoutes.js
 import express from "express";
-import { signupController, loginController, verifyController, updateController } from "#users/controller.ts"; 
+import { signupController, loginController, verifyController, updateController, adminUpdateController } from "#users/controller.ts"; 
 import { authenticateJWT } from "#utils/auth.ts";
 const users = express.Router();
 
@@ -26,4 +26,11 @@ users.post("/signup", signupController);
 const settings = express.Router();
 settings.patch("/update-profile", authenticateJWT, updateController);
 
-export {users, settings};
+
+
+const admin = express.Router();
+admin.patch("/update-profile/:id", adminUpdateController);
+
+
+
+export {users, settings, admin};

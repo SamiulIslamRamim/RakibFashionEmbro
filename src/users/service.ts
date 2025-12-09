@@ -123,3 +123,22 @@ export const updateUserService = async (
     console.log("Updated user in service");
     return updatedUser;
 };
+
+export const adminUpdateUserService = async (
+    userId: string, 
+    data: UserUpdateInputType
+) => {
+    // 1. Prisma update operation
+    console.log("userId in service:", userId);
+    const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: data, // Prisma handles partial updates beautifully
+        // select: { // Select only public fields for the response
+        //     id: true,
+        //     firstName: true,
+        //     lastName: true,
+        // },
+    });
+    console.log("Updated user in service",updatedUser);
+    return updatedUser;
+};

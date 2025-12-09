@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { SignupInputSchema, LoginInputSchema, VerifyInputSchema, UserUpdateInputSchema, UserMinimalSchema } from "#users/schema.ts"; 
-import { registerUserService, loginUserService, verifyUserService, updateUserService } from "#users/service.ts";
+import { registerUserService, loginUserService, verifyUserService, updateUserService, adminUpdateUserService } from "#users/service.ts";
 import type { SignupInputType, VerifyInputType } from "#users/schema.ts";
 import prisma from "#utils/db.ts";
 import type { AuthenticatedRequest } from "#utils/auth.ts";
@@ -119,8 +119,6 @@ export const verifyController = async (req: Request, res: Response) => {
 };
 
 
-
-
 // update Controller
 export const updateController = async (req: AuthenticatedRequest, res: Response) => {
     const userId = req.userId;
@@ -136,6 +134,40 @@ export const updateController = async (req: AuthenticatedRequest, res: Response)
         }
 
         const user = await updateUserService(userId, updateData);
+        
+        res.status(200).send(user);
+
+    } catch (error: any) {
+        if (error.issues) {
+            return res.status(400).send({ 
+                error: 'Validation failed.', 
+                details: error.issues 
+            });
+        } 
+        if (error.message && error.message.includes("not found")) {
+            return res.status(404).send({ error: "User not found." });
+        }
+        console.error("Error updating user:", error);
+        res.status(500).send({ error: 'Internal server error.' });
+    }
+};
+
+
+// update Controller
+export const adminUpdateController = async (req: Request, res: Response) => {
+    const userId = req.params.id;
+    console.log("userId in controller:", userId);
+    if (!userId) {
+        return res.status(401).send({ message: 'Unauthorized or invalid.' });
+    }
+    try {
+        const updateData = UserUpdateInputSchema.parse(req.body); 
+
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).send({ message: 'No fields provided for update.' });
+        }
+
+        const user = await adminUpdateUserService(userId, updateData);
         
         res.status(200).send(user);
 

@@ -1,7 +1,7 @@
 // index.js
 import express from "express";
 import dotenv from "dotenv";
-import {users, settings} from "#users/routes.ts";
+import {users, settings, admin} from "#users/routes.ts";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import cors from "cors";
@@ -34,6 +34,7 @@ app.get("/", (req, res) => {
 // app.use('auth',authJwtMiddleware);
 app.use("/users", users);
 app.use("/settings", settings);
+app.use("/admin", admin);
 
 
 //note: Success Message
