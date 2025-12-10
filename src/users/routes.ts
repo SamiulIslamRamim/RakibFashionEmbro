@@ -1,36 +1,30 @@
 // routes/mainRoutes.js
 import express from "express";
-import { signupController, loginController, verifyController, updateController, adminUpdateController } from "#users/controller.ts"; 
+import { signupController, loginController, verifyController, updateController, adminUpdateController, } from "#users/controller.ts";
 import { authenticateJWT } from "#utils/auth.ts";
+
+//INFO: Users Router
 const users = express.Router();
 
-
-// Define routes on the main router
 users.get("/", (req, res) => {
   console.log("This is Signup Router Working");
-  res.status(200).send("Welcome to the Sign Up page. Please submit your data via POST.");
+  res
+    .status(200)
+    .send("Welcome to the Sign Up page. Please submit your data via POST.");
 });
+
 users.post("/signup", signupController);
+users.post("/verify", verifyController);
+users.post("/login", loginController);
 
-
-// Define routes on the main router
-// users.get("/login", (req, res) => {
-  //   console.log("This is Login Router Working");
-  //   res.status(200).send("Welcome to the LOGIN page. Please submit your data via POST.");
-  // });
-  users.post("/login", loginController); 
-  
-  users.post("/verify", verifyController); 
-  
-  
+//INFO: Users Router
 const settings = express.Router();
 settings.patch("/update-profile", authenticateJWT, updateController);
 
-
-
+//INFO: Users Router
 const admin = express.Router();
 admin.patch("/update-profile/:id", adminUpdateController);
 
 
 
-export {users, settings, admin};
+export { users, settings, admin };
