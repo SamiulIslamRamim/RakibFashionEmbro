@@ -7,11 +7,8 @@ import helmet from "helmet";
 import cors from "cors";
 // import bodyParser from "body-parser";
 
-// note: later use these middlewares
 
 dotenv.config();
-
-
 const app = express();
 const PORT = process.env.PORT || 9001;
 
@@ -23,7 +20,7 @@ app.use(express.json());
 app.use(cookieParser());
 // app.use(bodyParser.json());
 
-// Routes
+// INFO: Routes
 
 //Home Route
 app.get("/", (req, res) => {
@@ -37,7 +34,6 @@ app.use("/settings", settings);
 app.use("/admin", admin);
 
 
-//note: Success Message
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`);
 });

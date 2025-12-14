@@ -7,10 +7,7 @@ datasource db {
   provider = "postgresql"
 }
 
-
-
-//note: Experimental feature
-
+// ENUMS
 enum Role {
   PRODUCTION_MANAGER
   SUPERVISOR
@@ -26,9 +23,7 @@ enum ShiftType {
 }
 
 enum AttendanceStatus {
-  ABSENT          // Deducts salary
-  SICK_LEAVE
-  FESTIVAL_LEAVE
+  ABSENT
 }
 
 enum MachineStatus {
@@ -50,158 +45,166 @@ enum ExpenseCategory {
   UTILITY_BILL  // Current Bill
   OTHER
 }
-
-//INFO: (User, Profile, Machine)
-model User {  //fix: User vul disi
-  id                     String             @id @default(uuid())
-  firstName              String
-  lastName               String
-  email                  String             @unique
-  passwordHash           String
-  isVerified             Boolean   @default(false)
-  verificationCode       String?
-  verificationExpiry     DateTime?
-  createdAt              DateTime           @default(now())
-  updatedAt              DateTime           @updatedAt
-  role                   Role               @default(MACHINE_HELPER)
-  isActive               Boolean            @default(true) 
-
-
-  // Relations
-  profile                Profile?
-  assignments            MachineAssignment[]
-  rosterEntries          ShiftRoster[]      
-  payments               Payment[]
+enum bloodGroupType {
+  A_POSITIVE
+  A_NEGATIVE
+  B_POSITIVE
+  B_NEGATIVE
+  AB_POSITIVE
+  AB_NEGATIVE
+  O_POSITIVE
+  O_NEGATIVE
 }
 
-model Profile {
-  id                     String             @id @default(uuid())
-  userId                 String             @unique
-  user                   User               @relation(fields: [userId], references: [id])
-  baseSalary             Decimal            @default(0)
-  bloodGroup             String?
-  phone                  String?
-  emergencyContact       String?
-  presentAddress         String?
-  permanentAddress       String?
-  joiningDate            DateTime?           @default(now())
+// INFO: (User and Profile Merged)
+model User {
+  id                   String            @id @default(uuid())
+  firstName            String
+  lastName             String
+  email                String            @unique
+  password             String
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  role                 Role?              @default(MACHINE_HELPER)
+  isActive             Boolean           @default(true)
+  isVerified           Boolean           @default(false)
+  verificationCode     String?
+  verificationExpiry   DateTime?
+
+  // --- MERGED PROFILE FIELDS START ---
+  baseSalary           Decimal           @default(0)
+  bloodGroup           bloodGroupType?
+  phone                String?
+  emergencyContact     String?
+  presentAddress       String?
+  permanentAddress     String?
+  joiningDate          DateTime?         @default(now())
+  dateOfBirth          DateTime?
+  // Relations
+  assignments          MachineAssignment[]
+  rosterEntries        ShiftRoster[]
+  payments             Payment[]
 }
 
 model Machine {
-  id                     String             @id @default(uuid())
-  machineNumber          String             @unique
-  headCount              Int                @default(0)
-  status                 MachineStatus      @default(ACTIVE)
-
+  id                   String            @id @default(uuid())
+  machineNumber        String            @unique
+  headCount            Int               @default(0)
+  status               MachineStatus     @default(ACTIVE)
 
   // Relations
-  assignments            MachineAssignment[]
-  maintenanceLogs        Maintenance[]
-  productionLogs          ProductionLog[]     
+  assignments          MachineAssignment[]
+  maintenanceLogs      Maintenance[]
+  productionLogs       ProductionLog[]
 }
 
 
-//INFO: Attendance, Production & Roster
+// INFO: Attendance & Shifts
 model ShiftRoster {
-  id                      String             @id @default(uuid())
-  userId                  String
-  user                    User               @relation(fields: [userId], references: [id])
-  shift                   ShiftType          // DAY or NIGHT
-  clockIn                 DateTime?           
-  clockOut                DateTime?          
-  calculatedDurationHours Float?             
-  overtimeHours           Float              @default(0)
-  status                  AttendanceStatus?  // Only record status if they are NOT working
-  remarks                 String?
+  id                   String            @id @default(uuid())
+  userId               String
+  user                 User              @relation(fields: [userId], references: [id])
+  shift                ShiftType         
+  clockIn              DateTime?
+  clockOut             DateTime?
+  calculatedDurationHours Float?
+  overtimeHours        Float             @default(0)
+  status               AttendanceStatus? 
+  remarks              String?
 
+  primaryProduction    ProductionLog[]   @relation("PrimaryOperatorProduction")
+  secondaryProduction  ProductionLog[]   @relation("SecondaryOperatorProduction")
 
-  // Relations 
-  operatorProduction      ProductionLog[]    @relation("OperatorProduction")
-  helperProduction        ProductionLog[]    @relation("HelperProduction")
-  
-  // Indexing for fast lookups by user and date
-  @@unique([userId, clockIn]) 
+  @@unique([userId, clockIn])
   @@index([userId, clockIn])
 }
 
+// INFO: New model for defining production jobs and targets
+model ProductionTarget {
+  id                   String    @id @default(uuid())
+  date                 DateTime  @default(now()) // When the target was set or for which date
+  memo                 String?
+  size                 String?   // e.g., "26/32"
+  designName           String?
+  designCode           String    
+  type                 String?   // e.g., "Embroidery", "Stitching", etc.
+  quantity             Int       // The total number of items needed
+  unitPrice            Decimal   // Price per unit for calculation
+  target               Int       
 
+  // Relations
+  productionLogs       ProductionLog[] 
+}
+
+// INFO: Production Log
 model ProductionLog {
-  id                     String             @id @default(uuid())
-  date                   DateTime           @default(now())
+  id                   String    @id @default(uuid())
+  date                 DateTime  @default(now())
 
-  // Link to the Operator's Roster entry (their time log)
-  operatorRosterId       String
-  operatorRoster         ShiftRoster        @relation("OperatorProduction", fields: [operatorRosterId], references: [id])
+  productionTargetId   String
+  productionTarget     ProductionTarget @relation(fields: [productionTargetId], references: [id])
 
-  // Link to the Helper's Roster entry (optional)
-  helperRosterId         String?
-  helperRoster           ShiftRoster?       @relation("HelperProduction", fields: [helperRosterId], references: [id])
-  
-  // The Machine involved
-  machineId              String
-  machine                Machine            @relation(fields: [machineId], references: [id])
-  
-  // The Metrics
-  stitchCount            Int
-  stopCount              Int?
-  designName             String?
+  primaryOperatorRosterId  String
+  primaryOperatorRoster    ShiftRoster @relation("PrimaryOperatorProduction", fields: [primaryOperatorRosterId], references: [id])
+  secondaryOperatorRosterId String?
+  secondaryOperatorRoster   ShiftRoster? @relation("SecondaryOperatorProduction", fields: [secondaryOperatorRosterId], references: [id])
 
-  // Indexing to find production by the roster/shift
-  @@index([operatorRosterId, machineId]) 
+  machineId            String
+  machine              Machine   @relation(fields: [machineId], references: [id])
+
+  stitchCount          Int
+  stopCount            Int?
+
+  @@index([primaryOperatorRosterId, machineId])
 }
 
 
-//INFO: Financial & Asset Logs
+// INFO: Financial & Asset Logs
 model Payment {
-  id                     String             @id @default(uuid())
-  date                   DateTime           @default(now())
-  userId                 String
-  user                   User               @relation(fields: [userId], references: [id])
-  amount                 Decimal
-  type                   PaymentType
-  notes                  String?
+  id                   String    @id @default(uuid())
+  date                 DateTime  @default(now())
+  userId               String
+  user                 User      @relation(fields: [userId], references: [id])
+  amount               Decimal
+  type                 PaymentType
+  notes                String?
 }
 
 // Factory Expenses (General Costs)
 model Expense {
-  id                     String             @id @default(uuid())
-  date                   DateTime           @default(now())
-  category               ExpenseCategory
-  itemName               String
-  amount                 Decimal
+  id                   String    @id @default(uuid())
+  date                 DateTime  @default(now())
+  category             ExpenseCategory
+  itemName             String
+  amount               Decimal
 }
 
 // Machine-Specific Maintenance Log
 model Maintenance {
-  id                     String             @id @default(uuid())
-  machineId              String
-  machine                Machine            @relation(fields: [machineId], references: [id])
-  date                   DateTime           @default(now())
-  cost                   Decimal
-  reason                 String?
-  technician             String?
+  id                   String    @id @default(uuid())
+  machineId            String
+  machine              Machine   @relation(fields: [machineId], references: [id])
+  date                 DateTime  @default(now())
+  cost                 Decimal
+  reason               String?
+  technician           String?
+  techCharge           Int?
 }
 
-// Global Factory Calendar
-model Holiday {
-  id                     String             @id @default(uuid())
-  date                   DateTime           @unique
-  name                   String
-}
 
 // Machine Assignments
 model MachineAssignment {
-  id                     String             @id @default(uuid())
-  
-  machineId              String
-  machine                Machine            @relation(fields: [machineId], references: [id])
-  
-  userId                 String
-  user                   User               @relation(fields: [userId], references: [id])
-  
-  assignedAt             DateTime           @default(now())
-  endedAt                DateTime?
-  isActive               Boolean            @default(true)
+  id                   String    @id @default(uuid())
+
+  machineId            String
+  machine              Machine   @relation(fields: [machineId], references: [id])
+
+  userId               String
+  user                 User      @relation(fields: [userId], references: [id])
+
+  assignedAt           DateTime  @default(now())
+  endedAt              DateTime?
+  isActive             Boolean   @default(true)
 
   @@index([userId, isActive])
 }

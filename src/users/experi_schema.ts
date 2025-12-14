@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-// --- ENUMS ---
 export const RoleEnum = z.enum([
   "PRODUCTION_MANAGER",
   "SUPERVISOR",
@@ -11,7 +10,9 @@ export const RoleEnum = z.enum([
 ]);
 export type Role = z.infer<typeof RoleEnum>;
 
-// 1. Profile Schema 
+
+
+// INFO: Profile Schema 
 export const ProfileSchema = z.object({
   id: z.string().uuid(),
   userId: z.string().uuid(),
@@ -28,13 +29,13 @@ export const ProfileSchema = z.object({
 });
 export type ProfileType = z.infer<typeof ProfileSchema>;
 
-// 2. User Schema 
+// INFO: User Schema 
 export const UserSchema = z.object({
   id: z.string().uuid(),
   firstName: z.string().min(3, "First name must be at least 3 characters.").trim(),
   lastName: z.string().min(3, "Last name must be at least 3 characters.").trim(),
   email: z.string().email("Invalid email format."),
-  passwordHash: z.string(),
+  password: z.string(),
   isVerified: z.boolean().default(false),
   verificationCode: z.string().optional().nullable(), 
   verificationExpiry: z.date().optional().nullable(),
@@ -47,93 +48,83 @@ export const UserSchema = z.object({
 });
 export type UserType = z.infer<typeof UserSchema>;
 
-
-// Note: Public data with hiding sensitive info
+// INFO: Public data 
 export const UserPublicSchema = UserSchema.omit({
-  passwordHash: true,
+  password: true,
   verificationCode: true,
   verificationExpiry: true,
 });
 export type UserPublicType = z.infer<typeof UserPublicSchema>;
 
-// Note: minimal user data
+// INFO: minimal user data
 export const UserMinimalSchema = UserSchema.pick({
   id: true,
   email: true,
-  firstName: true, // Added for slightly more context
+  firstName: true, 
   lastName: true,
-  role: true, // Added the new role
+  role: true, 
 });
 export type UserMinimalType = z.infer<typeof UserMinimalSchema>;
 
-// --- INPUT SCHEMAS ---
 
-// Note: signup input
+
+// INFO: signup input
 export const SignupInputSchema = z.object({
   firstName: z.string().trim().min(3, "First name is required."),
   lastName: z.string().trim().min(3, "Last name is required."),
   email: z.string().email("A valid email address is required."),
 
-  // Use 'password' for the plain text input from the user
   password: z.string().min(8, "Password must be at least 8 characters long."),
 
-  // Optional fields on signup
-  role: RoleEnum.optional(), // Default is MACHINE_HELPER in Prisma
+  role: RoleEnum.optional(), 
   isVerified: z.boolean().optional(),
 });
 export type SignupInputType = z.infer<typeof SignupInputSchema>;
 
-// Note: login input
+// INFO: login input
 export const LoginInputSchema = z.object({
   email: z.string().email("A valid email address is required."),
   password: z.string().min(8, "Password is required."),
 });
 export type LoginInputType = z.infer<typeof LoginInputSchema>;
 
-// Note: verify input
+// INFO: verify input
 export const VerifyInputSchema = z.object({
   email: z.string().email("A valid email address is required."),
   code: z.string().length(6, "Verification code must be 6 digits."),
 });
 export type VerifyInputType = z.infer<typeof VerifyInputSchema>;
 
-// --- UPDATE SCHEMAS (CRITICAL CHANGES) ---
 
+
+// INFO: update user input
 const UserUpdatableFields = UserSchema.omit({
   id: true,
   email: true,
-  passwordHash: true,
+  password: true,
   createdAt: true,
   updatedAt: true,
   verificationCode: true,
   verificationExpiry: true,
-  // NEW RESTRICTION: Users cannot change their active status
   isActive: true,
 });
 
-// 2. Profile Updatable Fields (Model: Profile)
 const ProfileUpdatableFields = ProfileSchema.omit({
   id: true,
   userId: true,
-  // NEW RESTRICTION: Joining date is set once
   joiningDate: true,
+  baseSalary: true,
 });
 
-// 3. Combined Update Input Schema
-// This combines fields from both User and Profile that can be updated.
-// We allow updates to User fields AND optional updates to Profile fields.
 export const UserUpdateInputSchema = z
   .object({
     // User fields made optional (partial())
     firstName: UserUpdatableFields.shape.firstName.optional(),
     lastName: UserUpdatableFields.shape.lastName.optional(),
     role: UserUpdatableFields.shape.role.optional(),
-    isVerified: UserUpdatableFields.shape.isVerified.optional(), // Though usually admin only
-
     // Profile fields nested under an optional 'profile' object
     profile: z
       .object({
-        baseSalary: ProfileUpdatableFields.shape.baseSalary.optional(),
         bloodGroup: ProfileUpdatableFields.shape.bloodGroup
           .optional()
           .nullable(),
@@ -149,9 +140,7 @@ export const UserUpdateInputSchema = z
           .nullable(),
       })
       .optional(),
-
-    // Note: If you want to allow admin updates to isActive, you'd create an AdminUpdateSchema
   })
-  .partial(); // Make all top-level keys optional for PATCH requests
+  .partial(); 
 
 export type UserUpdateInputType = z.infer<typeof UserUpdateInputSchema>;

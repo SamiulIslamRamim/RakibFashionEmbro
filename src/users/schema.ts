@@ -1,18 +1,44 @@
 import { z } from "zod";
+
+export const RoleEnum = z.enum([
+  "PRODUCTION_MANAGER",
+  "SUPERVISOR",
+  "CUTTING_HELPER",
+  "MACHINE_OPERATOR",
+  "MACHINE_HELPER",
+  "FACTORY_OVERSEER",
+]);
+export type Role = z.infer<typeof RoleEnum>;
+
+
 //Note: userType
 export const UserSchema = z.object({
     id: z.string().uuid(),
     firstName: z.string().min(3, "First name must be at least 3 characters."),
     lastName: z.string().min(3, "Last name must be at least 3 characters."),
     email: z.string().email("Invalid email format."),
-    passwordHash: z.string(), 
+    password: z.string(), 
+    createdAt: z.date(),
+    updatedAt: z.date(),
+    role: RoleEnum.default("MACHINE_HELPER"),
+    isActive: z.boolean().default(true),
     isVerified: z.boolean(),
     verificationCode: z.string().min(6, "Verification code is required."),
     verificationExpiry: z.date(),
-    createdAt: z.date(),
-    updatedAt: z.date(),
-});
+    //personal info
+    baseSalary: z.preprocess(
+      (val) => (val === null || val === undefined || val === "" ? 0 : val),
+      z.coerce.number().min(0, "Base salary cannot be negative")
+    ).default(0),
+    bloodGroup: z.string().optional().nullable(),
+    phone: z.string().optional().nullable(),
+    emergencyContact: z.string().optional().nullable(),
+    presentAddress: z.string().optional().nullable(),
+    permanentAddress: z.string().optional().nullable(),
+    joiningDate: z.date().default(new Date()),
+    dateOfBirth: z.date().optional().nullable(),
 
+});
 export type UserType = z.infer<typeof UserSchema>;
 
 
@@ -20,7 +46,7 @@ export type UserType = z.infer<typeof UserSchema>;
 //Note: Public data with hiding sensitive info
 
 export const UserPublicSchema = UserSchema.omit({
-    passwordHash: true,
+    password: true,
     verificationCode: true,
     verificationExpiry: true,
 });
@@ -31,8 +57,14 @@ export type UserPublicType = z.infer<typeof UserPublicSchema>;
 export const UserMinimalSchema = UserSchema.pick({
     id: true,
     email: true,
+    firstName: true,
+    lastName: true,
+    role: true,
 });
 
+export type UserMinimalType = z.infer<typeof UserMinimalSchema>;
+
+//todo: fix from here. then fix service and controller. then add update password update email routes and delete account route.
 
 //Note: signup input
 export const SignupInputSchema = z.object({
@@ -41,7 +73,7 @@ export const SignupInputSchema = z.object({
     email: z.string().email("A valid email address is required."),
     isVerified: z.boolean().optional(),
     // Validate the PLAIN password before hashing
-   passwordHash: z.string().min(8, "Password must be at least 8 characters long."),
+   password: z.string().min(8, "Password must be at least 8 characters long."),
 });  
 
 export type SignupInputType = z.infer<typeof SignupInputSchema>;
@@ -73,7 +105,7 @@ export type VerifyInputType = z.infer<typeof VerifyInputSchema>;
 const UserUpdatableFields = UserSchema.omit({
     id: true, 
     email: true, // Email is usually updated via a different, secure flow
-    passwordHash: true, // Handled by a separate 'change password' flow
+    password: true, // Handled by a separate 'change password' flow
     createdAt: true,
     updatedAt: true,
     verificationCode: true,

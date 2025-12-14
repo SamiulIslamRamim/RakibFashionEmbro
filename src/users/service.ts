@@ -11,7 +11,7 @@ import type { SignupInputType,
 export const registerUserService = async (data: SignupInputType) => {
   //console.log("Registering user with data:", data);
     const saltRounds = 10;
-    const passwordHash = await bcrypt.hash(data.passwordHash, saltRounds);
+    const password = await bcrypt.hash(data.password, saltRounds);
     const verificationCode = crypto.randomInt(100000, 999999).toString();
     const verificationExpiry = new Date(Date.now() + 3 * 60 * 1000);
 
@@ -20,7 +20,7 @@ export const registerUserService = async (data: SignupInputType) => {
             firstName: data.firstName,
             lastName: data.lastName,
             email: data.email,
-            passwordHash: passwordHash,
+            password: password,
             verificationCode: verificationCode,
             verificationExpiry: verificationExpiry,
         },
@@ -35,7 +35,7 @@ export const registerUserService = async (data: SignupInputType) => {
 
 
 // LOGIN SERVICE
-export const loginUserService = async (email: string, passwordHash: string) => {
+export const loginUserService = async (email: string, password: string) => {
     // 1. Find user
     const user = await prisma.user.findUnique({
         where: { email },
@@ -43,7 +43,7 @@ export const loginUserService = async (email: string, passwordHash: string) => {
             id: true,
             email: true,
             firstName: true,
-            passwordHash: true,
+            password: true,
             isVerified: true
         }
     });
@@ -53,7 +53,7 @@ export const loginUserService = async (email: string, passwordHash: string) => {
     }
 
     // 2. Compare password
-    const passwordMatch = await bcrypt.compare(passwordHash, user.passwordHash);
+    const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
         throw new Error("Invalid credentials");
     }

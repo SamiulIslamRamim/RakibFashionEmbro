@@ -12,16 +12,15 @@ users.get("/", (req, res) => {
     .status(200)
     .send("Welcome to the Sign Up page. Please submit your data via POST.");
 });
-
 users.post("/signup", signupController);
 users.post("/verify", verifyController);
 users.post("/login", loginController);
 
-//INFO: Users Router
+//INFO: User Update
 const settings = express.Router();
 settings.patch("/update-profile", authenticateJWT, updateController);
 
-//INFO: Users Router
+//INFO: Admin Update
 const admin = express.Router();
 admin.patch("/update-profile/:id", adminUpdateController);
 
