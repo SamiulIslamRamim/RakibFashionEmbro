@@ -5,7 +5,7 @@ import {users, settings, admin} from "#users/routes.ts";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import cors from "cors";
-// import bodyParser from "body-parser";
+import bodyParser from "body-parser";
 
 
 dotenv.config();
@@ -18,6 +18,7 @@ app.use(helmet());
 app.use(cors({ origin: "http://localhost:5173", credentials: true })); 
 app.use(express.json());
 app.use(cookieParser());
+app.use(bodyParser.urlencoded({ extended: true }));
 // app.use(bodyParser.json());
 
 // INFO: Routes

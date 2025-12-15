@@ -1,7 +1,7 @@
 import prisma from "#utils/db.ts";
 import * as bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { sendOtp } from "#utils/email.ts";
+import { sendOtp, sendEmail } from "#utils/email.ts";
 import { signAccessToken, signRefreshToken, } from "#utils/jwt.ts";
 import type { SignupInputType,
               UserUpdateInputType
@@ -17,9 +17,9 @@ export const registerUserService = async (data: SignupInputType) => {
 
     const newUser = await prisma.user.create({
         data: {
+            email: data.email,
             firstName: data.firstName,
             lastName: data.lastName,
-            email: data.email,
             password: password,
             verificationCode: verificationCode,
             verificationExpiry: verificationExpiry,
@@ -98,7 +98,7 @@ export const verifyUserService = async (email: string, verificationCode: string)
         },
         select: { id: true, email: true} 
     });
-    console.log("User verified: from service & done with service");
+    console.log("User verified: from service & done with service", verifiedUser);
     return verifiedUser;
 };
 
@@ -114,7 +114,7 @@ export const updateUserService = async (
     const updatedUser = await prisma.user.update({
         where: { id: userId },
         data: data, // Prisma handles partial updates beautifully
-        select: { // Select only public fields for the response
+        select: { 
             id: true,
             firstName: true,
             lastName: true,
@@ -141,4 +141,42 @@ export const adminUpdateUserService = async (
     });
     console.log("Updated user in service",updatedUser);
     return updatedUser;
+};
+
+
+//todo: need to go through this again
+export const forgotPasswordService = async (email: string) => {
+    // ... (rest of the database logic for finding user and generating token/expiry) ...
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+        throw new Error("Invalid email or code.");
+    }
+
+    const token = crypto.randomBytes(20).toString('hex');
+    const expiry = new Date(Date.now() + 3600000); 
+
+    await prisma.user.update({
+        where: { id: user.id },
+        data: { verificationCode: token, verificationExpiry: expiry }
+    });
+
+    // --- CLEAN, SEPARATED MAILING LOGIC ---
+    const resetLink = `http://localhost:5173/reset-password?token=${token}`; 
+
+    const htmlContent = `
+        <p>Hello ${user.firstName},</p>
+        <p>You requested a password reset. Click the link below to set a new password:</p>
+        <p><a href="${resetLink}">Reset Your Password</a></p>
+        <p>This link is valid for 1 hour.</p>
+        <p>If you did not request this, please ignore this email.</p>
+    `;
+
+    // Call the dedicated mail utility
+    await sendEmail({
+        to: email,
+        subject: 'Your Password Reset Link',
+        htmlContent: htmlContent,
+        devLog: `Password Reset Link: ${resetLink}`,
+    });
+    // --- END MAILING LOGIC ---
 };

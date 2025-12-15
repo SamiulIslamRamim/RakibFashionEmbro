@@ -1,5 +1,6 @@
 // routes/mainRoutes.js
 import express from "express";
+//info: will add to forgot, verifyreset, resetpass controllers later
 import { signupController, loginController, verifyController, updateController, adminUpdateController, } from "#users/controller.ts";
 import { authenticateJWT } from "#utils/auth.ts";
 
@@ -15,7 +16,10 @@ users.get("/", (req, res) => {
 users.post("/signup", signupController);
 users.post("/verify", verifyController);
 users.post("/login", loginController);
-
+//todo: need to add these controllers later
+users.post("/forgot-password", );
+users.post("/reset-password/:token", );
+users.post("/reset-password", );
 //INFO: User Update
 const settings = express.Router();
 settings.patch("/update-profile", authenticateJWT, updateController);

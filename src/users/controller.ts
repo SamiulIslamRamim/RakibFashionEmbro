@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
-import { SignupInputSchema, LoginInputSchema, VerifyInputSchema, UserUpdateInputSchema, UserMinimalSchema } from "#users/schema.ts"; 
-import { registerUserService, loginUserService, verifyUserService, updateUserService, adminUpdateUserService } from "#users/service.ts";
-import type { SignupInputType, VerifyInputType } from "#users/schema.ts";
+import { SignupInputSchema, LoginInputSchema, VerifyInputSchema, UserUpdateInputSchema, ForgotPasswordInputSchema, ResetPasswordInputSchema } from "#users/schema.ts"; 
+import { registerUserService, loginUserService, verifyUserService, updateUserService, adminUpdateUserService, } from "#users/service.ts";
+import type { SignupInputType, VerifyInputType, ForgotPasswordInputType, ResetPasswordInputType } from "#users/schema.ts";
 import prisma from "#utils/db.ts";
 import type { AuthenticatedRequest } from "#utils/auth.ts";
 
@@ -14,7 +14,7 @@ export const signupController = async (req: Request, res: Response) => {
         // 1. Validate Input using Zod
         const parsed = SignupInputSchema.safeParse(req.body);
        
-                   // console.log("Parsed data:", parsed);
+                    console.log("Parsed data:", parsed);
 
           const existingUser = await prisma.user.findUnique({ where: { email:parsed.data?.email } });
             if (existingUser) {
@@ -98,7 +98,8 @@ export const verifyController = async (req: Request, res: Response) => {
         // 4. Respond
         return res.status(200).json({ 
             message: "Account successfully verified and logged in.",
-            user: UserMinimalSchema.parse(user)
+            //user: UserMinimalSchema.parse(user),
+            
         });
 
     } catch (error) {
@@ -153,7 +154,7 @@ export const updateController = async (req: AuthenticatedRequest, res: Response)
 };
 
 
-// update Controller
+// Todo: admin update Controller -> need to update for every field
 export const adminUpdateController = async (req: Request, res: Response) => {
     const userId = req.params.id;
     console.log("userId in controller:", userId);
@@ -185,3 +186,6 @@ export const adminUpdateController = async (req: Request, res: Response) => {
         res.status(500).send({ error: 'Internal server error.' });
     }
 };
+
+
+
