@@ -13,6 +13,7 @@ const app = express();
 const PORT = process.env.PORT || 9001;
 
 
+
 //note: middlewares (to be used later)
 app.use(helmet());
 app.use(cors({ origin: "http://localhost:5173", credentials: true })); 

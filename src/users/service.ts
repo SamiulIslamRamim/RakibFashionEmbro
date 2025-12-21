@@ -1,16 +1,16 @@
 import prisma from "#utils/db.ts";
 import * as bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { sendOtp, sendEmail } from "#utils/email.ts";
+import { sendOtp } from "#utils/email.ts";
+import { sendResetLink } from '#utils/resetPassEmail.ts';
 import { signAccessToken, signRefreshToken, } from "#utils/jwt.ts";
-import type { SignupInputType,
-              UserUpdateInputType
- } from "#users/schema.ts";
+import type { SignupInputType, UserUpdateInputType } from "#users/schema.ts";
+
+const saltRounds = 10;
 
 // SIGNUP SERVICE 
 export const registerUserService = async (data: SignupInputType) => {
   //console.log("Registering user with data:", data);
-    const saltRounds = 10;
     const password = await bcrypt.hash(data.password, saltRounds);
     const verificationCode = crypto.randomInt(100000, 999999).toString();
     const verificationExpiry = new Date(Date.now() + 3 * 60 * 1000);
@@ -102,7 +102,6 @@ export const verifyUserService = async (email: string, verificationCode: string)
     return verifiedUser;
 };
 
-
 //UPDATE SERVICE
 
 export const updateUserService = async (
@@ -146,37 +145,60 @@ export const adminUpdateUserService = async (
 
 //todo: need to go through this again
 export const forgotPasswordService = async (email: string) => {
-    // ... (rest of the database logic for finding user and generating token/expiry) ...
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-        throw new Error("Invalid email or code.");
-    }
+    if (!user) return; 
 
     const token = crypto.randomBytes(20).toString('hex');
-    const expiry = new Date(Date.now() + 3600000); 
+    const expiry = new Date(Date.now() + 3600000); // 1 Hour 
 
     await prisma.user.update({
         where: { id: user.id },
         data: { verificationCode: token, verificationExpiry: expiry }
     });
 
-    // --- CLEAN, SEPARATED MAILING LOGIC ---
-    const resetLink = `http://localhost:5173/reset-password?token=${token}`; 
+    //TODO: check for frontend reset page
+    const resetLink = `http://localhost:5173/reset-password/${token}`;
+    await sendResetLink({ to: email, resetLink, firstName: user.firstName });
+};
 
-    const htmlContent = `
-        <p>Hello ${user.firstName},</p>
-        <p>You requested a password reset. Click the link below to set a new password:</p>
-        <p><a href="${resetLink}">Reset Your Password</a></p>
-        <p>This link is valid for 1 hour.</p>
-        <p>If you did not request this, please ignore this email.</p>
-    `;
-
-    // Call the dedicated mail utility
-    await sendEmail({
-        to: email,
-        subject: 'Your Password Reset Link',
-        htmlContent: htmlContent,
-        devLog: `Password Reset Link: ${resetLink}`,
+export const checkResetTokenService = async (token: string): Promise<boolean> => {
+    const user = await prisma.user.findFirst({
+        where: { verificationCode: token, verificationExpiry: { gt: new Date() } }
     });
-    // --- END MAILING LOGIC ---
+    return !!user;
+};
+
+export const resetPasswordService = async (token: string, newPassword: string) => {
+    const user = await prisma.user.findFirst({
+        where: { verificationCode: token, verificationExpiry: { gt: new Date() } }
+    });
+
+    if (!user) throw new Error("Invalid or expired token.");
+
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    await prisma.user.update({
+        where: { id: user.id },
+        data: {
+            password: hashedPassword,
+            verificationCode: null,
+            verificationExpiry: null,
+        }
+    });
+};
+
+export const changePasswordService = async (userId: string, currentPass: string, newPass: string) => {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new Error("User not found.");
+
+    const isMatch = await bcrypt.compare(currentPass, user.password);
+    if (!isMatch) {
+        throw new Error("Incorrect current password");
+    }
+
+    const hashedNewPassword = await bcrypt.hash(newPass, saltRounds);
+    await prisma.user.update({
+        where: { id: userId },
+        data: { password: hashedNewPassword }
+    });
 };

@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const transporter = nodemailer.createTransport({
+export const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.sendgrid.net', // e.g., 'smtp.gmail.com' or SendGrid/Mailgun host
     port: parseInt(process.env.SMTP_PORT || '587', 10), 
     secure: false, // true for 465, false for other ports (like 587)
@@ -47,40 +47,3 @@ export const sendOtp = async ({ to, otpCode, firstName }: SendOtpParams): Promis
 
 
 
-
-
-
-
-
-
-//todo: need to check this
-
-
-interface SendEmailParams {
-    to: string;
-    subject: string;
-    htmlContent: string;
-    devLog?: string;
-}
-
-export const sendEmail = async ({ to, subject, htmlContent, devLog }: SendEmailParams): Promise<void> => {
-    // Development Mode Check
-    if (process.env.NODE_ENV !== 'production' && devLog) {
-        console.warn(`[DEV] Email content for ${to}: ${devLog}`);
-        return;
-    }
-
-    try {
-        await transporter.sendMail({
-            from: process.env.EMAIL_FROM || '"App Name | NO-REPLY" <noreply@yourdomain.com>',
-            to: to,
-            subject: subject,
-            html: htmlContent,
-        });
-
-    } catch (error) {
-        console.error(`Error sending email to ${to} for subject "${subject}":`, error);
-        // Throw a generic error for the calling service/controller to catch
-        throw new Error('Failed to send email.');
-    }
-};

@@ -22,7 +22,7 @@ export const bloodGroupEnum = z.enum([
 ]);
 export type BloodGroup = z.infer<typeof bloodGroupEnum>;
 
-//Note: userType
+//INFO: userType
 export const UserSchema = z.object({
   id: z.string().uuid(),
   firstName: z.string().min(3, "First name must be at least 3 characters."),
@@ -53,7 +53,7 @@ export const UserSchema = z.object({
 });
 export type UserType = z.infer<typeof UserSchema>;
 
-//Note: Public data with hiding sensitive info
+//INFO: Public data with hiding sensitive info
 
 export const UserPublicSchema = UserSchema.omit({
   password: true,
@@ -63,7 +63,7 @@ export const UserPublicSchema = UserSchema.omit({
 
 export type UserPublicType = z.infer<typeof UserPublicSchema>;
 
-//Note: minimal user data (hudai)
+//INFO: minimal user data (hudai)
 export const UserMinimalSchema = UserSchema.pick({
   id: true,
   email: true,
@@ -74,8 +74,7 @@ export const UserMinimalSchema = UserSchema.pick({
 
 export type UserMinimalType = z.infer<typeof UserMinimalSchema>;
 
-
-//Note: signup input
+//INFO: signup input
 export const SignupInputSchema = z.object({
   firstName: z.string().trim().min(3, "First name is required."),
   lastName: z.string().trim().min(3, "Last name is required."),
@@ -93,25 +92,25 @@ export const SignupInputSchema = z.object({
 
 export type SignupInputType = z.infer<typeof SignupInputSchema>;
 
-//Note: login input
+//INFO: login input
 export const LoginInputSchema = z.object({
-    email: z.string().email("A valid email address is required."),
-    password: z.string().min(8, "Password is required."),
+  email: z.string().email("A valid email address is required."),
+  password: z.string().min(8, "Password is required."),
 });
 
 export type LoginInputType = z.infer<typeof LoginInputSchema>;
 
-//Note: verify input
+//INFO: verify input
 export const VerifyInputSchema = z.object({
-    email: z.string().email("A valid email address is required."),
-    code: z.string().length(6, "Verification code must be 6 digits."),
+  email: z.string().email("A valid email address is required."),
+  code: z.string().length(6, "Verification code must be 6 digits."),
 });
 
 export type VerifyInputType = z.infer<typeof VerifyInputSchema>;
 
-//Note: update partial data
+//INFO: update partial data
 const UserUpdatableFields = UserSchema.omit({
-    id: true,
+  id: true,
   email: true,
   password: true,
   createdAt: true,
@@ -128,7 +127,6 @@ const UserUpdatableFields = UserSchema.omit({
 export const UserUpdateInputSchema = UserUpdatableFields.partial();
 export type UserUpdateInputType = z.infer<typeof UserUpdateInputSchema>;
 
-
 //todo: fix from here. then add update password update email routes and delete account route.
 
 export const ForgotPasswordInputSchema = z.object({
@@ -137,7 +135,22 @@ export const ForgotPasswordInputSchema = z.object({
 export type ForgotPasswordInputType = z.infer<typeof ForgotPasswordInputSchema>;
 
 export const ResetPasswordInputSchema = z.object({
-  token: z.string().min(3, "Token is required."), 
+  token: z.string().min(3, "Token is required."),
   password: z.string().min(8, "Password must be at least 8 characters."),
 });
 export type ResetPasswordInputType = z.infer<typeof ResetPasswordInputSchema>;
+
+export const ChangePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(8, "Current password is required."),
+    newPassword: z
+      .string()
+      .min(8, "New password must be at least 8 characters."),
+    confirmNewPassword: z.string().min(8, "Please confirm your new password."),
+  })
+  .refine((data) => data.newPassword === data.confirmNewPassword, {
+    message: "New passwords do not match.",
+    path: ["confirmNewPassword"],
+  });
+
+export type ChangePasswordInput = z.infer<typeof ChangePasswordSchema>;

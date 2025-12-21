@@ -1,10 +1,9 @@
 import type { Request, Response } from "express";
-import { SignupInputSchema, LoginInputSchema, VerifyInputSchema, UserUpdateInputSchema, ForgotPasswordInputSchema, ResetPasswordInputSchema } from "#users/schema.ts"; 
-import { registerUserService, loginUserService, verifyUserService, updateUserService, adminUpdateUserService, } from "#users/service.ts";
+import { SignupInputSchema, LoginInputSchema, VerifyInputSchema, UserUpdateInputSchema, ForgotPasswordInputSchema, ResetPasswordInputSchema, ChangePasswordSchema } from "#users/schema.ts"; 
+import { registerUserService, loginUserService, verifyUserService, updateUserService, adminUpdateUserService, forgotPasswordService, checkResetTokenService, resetPasswordService, changePasswordService} from "#users/service.ts";
 import type { SignupInputType, VerifyInputType, ForgotPasswordInputType, ResetPasswordInputType } from "#users/schema.ts";
 import prisma from "#utils/db.ts";
 import type { AuthenticatedRequest } from "#utils/auth.ts";
-
 
 
 
@@ -154,7 +153,7 @@ export const updateController = async (req: AuthenticatedRequest, res: Response)
 };
 
 
-// Todo: admin update Controller -> need to update for every field
+// FIX: admin update Controller -> need to update for every field
 export const adminUpdateController = async (req: Request, res: Response) => {
     const userId = req.params.id;
     console.log("userId in controller:", userId);
@@ -189,3 +188,74 @@ export const adminUpdateController = async (req: Request, res: Response) => {
 
 
 
+//TODO: forgot/reset password controller
+
+
+//forgetPassword controller
+export const forgotPasswordController = async (req: Request, res: Response) => {
+    try {
+        const parsed = ForgotPasswordInputSchema.safeParse(req.body);
+        if (!parsed.success) return res.status(400).json({ errors: parsed.error.issues });
+
+        await forgotPasswordService(parsed.data.email);
+        return res.status(200).json({ message: "A reset link has been sent to the user." });
+    } catch (error) {
+        return res.status(500).json({ message: "Internal server error." });
+    }
+};
+
+//verifyResetToken controller
+export const verifyResetTokenController = async (req: Request, res: Response) => {
+    const { token } = req.params;
+    try {
+        const isValid = await checkResetTokenService(token);
+        if (!isValid) return res.status(400).json({ valid: false, message: "Token is invalid or expired." });
+        
+        return res.status(200).json({ valid: true, message: "Token is valid." });
+    } catch (error) {
+        return res.status(500).json({ message: "Internal server error." });
+    }
+};
+
+//resetPassword controller
+export const resetPasswordController = async (req: Request, res: Response) => {
+    try {
+        const parsed = ResetPasswordInputSchema.safeParse(req.body);
+        if (!parsed.success) return res.status(400).json({ errors: parsed.error.issues });
+
+        await resetPasswordService(parsed.data.token, parsed.data.password);
+        return res.status(200).json({ message: "Password has been successfully updated." });
+    } catch (error: any) {
+        return res.status(400).json({ message: error.message || "Reset failed." });
+    }
+};
+
+//changePassword controller
+export const changePasswordController = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+        const parsed = ChangePasswordSchema.safeParse(req.body);
+        if (!parsed.success) {
+            return res.status(400).json({ errors: parsed.error.issues });
+        }
+
+        // 2. Get User ID from your Auth Middleware (e.g., JWT)
+        const userId = req.userId;
+        console.log("userId in controller:", userId); 
+
+        if (!userId) {
+            return res.status(401).json({ message: "Unauthorized. Please log in." });
+        }
+
+        await changePasswordService(
+            userId, 
+            parsed.data.currentPassword, 
+            parsed.data.newPassword
+        );
+
+        return res.status(200).json({ message: "Password changed successfully." });
+
+    } catch (error: any) {
+        const status = error.message === "Incorrect current password" ? 400 : 500;
+        return res.status(status).json({ message: error.message || "Internal server error." });
+    }
+};
