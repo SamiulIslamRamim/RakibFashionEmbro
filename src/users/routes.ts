@@ -1,7 +1,6 @@
 // routes/mainRoutes.js
 import express from "express";
-//info: will add to forgot, verifyreset, resetpass controllers later
-import { signupController, loginController, verifyController, updateController, adminUpdateController, forgotPasswordController, verifyResetTokenController, resetPasswordController, changePasswordController } from "#users/controller.ts";
+import { signupController, loginController, verifyController, updateController, adminUpdateController, forgotPasswordController, verifyResetTokenController, resetPasswordController, changePasswordController, userSelfDeactivateController, adminUpdateStatusController, adminHardDeleteController } from "#users/controller.ts";
 import { authenticateJWT } from "#utils/auth.ts";
 
 //INFO: Users Router
@@ -21,6 +20,7 @@ users.patch("/change-password", authenticateJWT, changePasswordController); //no
 users.post("/forgot-password", forgotPasswordController);
 users.get("/reset-password/:token", verifyResetTokenController);
 users.post("/reset-password", resetPasswordController);
+users.patch("/deactivate", authenticateJWT, userSelfDeactivateController); 
 
 //INFO: settings Router -> profile update
 const settings = express.Router();
@@ -29,7 +29,8 @@ settings.patch("/update-profile", authenticateJWT, updateController);
 //INFO: Admin Update
 const admin = express.Router();
 admin.patch("/update-profile/:id", adminUpdateController);
-
+admin.patch("/deactivate/:id", authenticateJWT, adminUpdateStatusController); //todo: need to  check this condition "isAdmin ?"
+admin.delete("/delete/:id", authenticateJWT, adminHardDeleteController); //todo: need to  check this condition "isAdmin ?"
 
 
 export { users, settings, admin };

@@ -56,6 +56,12 @@ enum bloodGroupType {
   O_NEGATIVE
 }
 
+enum isActiveType {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
 // INFO: (User and Profile Merged)
 model User {
   id                   String            @id @default(uuid())
@@ -65,8 +71,8 @@ model User {
   password             String
   createdAt            DateTime          @default(now())
   updatedAt            DateTime          @updatedAt
-  role                 Role?              @default(MACHINE_HELPER)
-  isActive             Boolean           @default(true)
+  role                 Role?             @default(MACHINE_HELPER)
+  isActive             isActiveType      @default(ACTIVE)
   isVerified           Boolean           @default(false)
   verificationCode     String?
   verificationExpiry   DateTime?

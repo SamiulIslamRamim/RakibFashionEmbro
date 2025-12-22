@@ -47,7 +47,7 @@ export const loginUserService = async (email: string, password: string) => {
             isVerified: true
         }
     });
-
+//todo: will delete later
     if (!user) {
         throw new Error("Invalid credentials");
     }
@@ -74,6 +74,7 @@ export const loginUserService = async (email: string, password: string) => {
 export const verifyUserService = async (email: string, verificationCode: string) => {
     const user = await prisma.user.findUnique({ where: { email } });
 
+    //todo: will delete later
     if (!user) {
         throw new Error("Invalid email or code.");
     }
@@ -200,5 +201,28 @@ export const changePasswordService = async (userId: string, currentPass: string,
     await prisma.user.update({
         where: { id: userId },
         data: { password: hashedNewPassword }
+    });
+};
+
+export const userSelfDeactivateService = async (userId: string) => {
+    return await prisma.user.update({
+        where: { id: userId },
+        data: { isActive: 'INACTIVE' }
+    });
+};
+
+
+//note: need to move to admin panel later
+export const adminUpdateStatusService = async (targetUserId: string, newStatus: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED') => {
+    return await prisma.user.update({
+        where: { id: targetUserId },
+        data: { isActive: newStatus }
+    });
+};
+
+
+export const adminHardDeleteService = async (targetUserId: string) => {
+    return await prisma.user.delete({
+        where: { id: targetUserId }
     });
 };

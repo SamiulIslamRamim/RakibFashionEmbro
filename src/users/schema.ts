@@ -1,4 +1,12 @@
+import { stat } from "fs";
 import { z } from "zod";
+
+export const isActiveEnum = z.enum([
+  "ACTIVE", 
+  "INACTIVE", 
+  "SUSPENDED"
+]);
+export type IsActiveType = z.infer<typeof isActiveEnum>;
 
 export const RoleEnum = z.enum([
   "PRODUCTION_MANAGER",
@@ -32,7 +40,7 @@ export const UserSchema = z.object({
   createdAt: z.date(),
   updatedAt: z.date(),
   role: RoleEnum.default("MACHINE_HELPER"),
-  isActive: z.boolean().default(true),
+  isActive: isActiveEnum.default("ACTIVE"),
   isVerified: z.boolean(),
   verificationCode: z.string().min(6, "Verification code is required."),
   verificationExpiry: z.date(),
@@ -154,3 +162,9 @@ export const ChangePasswordSchema = z
   });
 
 export type ChangePasswordInput = z.infer<typeof ChangePasswordSchema>;
+
+
+
+export const UpdateStatusSchema = z.object({
+  isActive: isActiveEnum,
+});

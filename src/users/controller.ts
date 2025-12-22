@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
-import { SignupInputSchema, LoginInputSchema, VerifyInputSchema, UserUpdateInputSchema, ForgotPasswordInputSchema, ResetPasswordInputSchema, ChangePasswordSchema } from "#users/schema.ts"; 
-import { registerUserService, loginUserService, verifyUserService, updateUserService, adminUpdateUserService, forgotPasswordService, checkResetTokenService, resetPasswordService, changePasswordService} from "#users/service.ts";
+import { SignupInputSchema, LoginInputSchema, VerifyInputSchema, UserUpdateInputSchema, ForgotPasswordInputSchema, ResetPasswordInputSchema, ChangePasswordSchema, UpdateStatusSchema } from "#users/schema.ts"; 
+import { registerUserService, loginUserService, verifyUserService, updateUserService, adminUpdateUserService, forgotPasswordService, checkResetTokenService, resetPasswordService, changePasswordService, userSelfDeactivateService, adminUpdateStatusService, adminHardDeleteService} from "#users/service.ts";
 import type { SignupInputType, VerifyInputType, ForgotPasswordInputType, ResetPasswordInputType } from "#users/schema.ts";
 import prisma from "#utils/db.ts";
 import type { AuthenticatedRequest } from "#utils/auth.ts";
@@ -221,6 +221,7 @@ export const verifyResetTokenController = async (req: Request, res: Response) =>
 export const resetPasswordController = async (req: Request, res: Response) => {
     try {
         const parsed = ResetPasswordInputSchema.safeParse(req.body);
+        
         if (!parsed.success) return res.status(400).json({ errors: parsed.error.issues });
 
         await resetPasswordService(parsed.data.token, parsed.data.password);
@@ -257,5 +258,50 @@ export const changePasswordController = async (req: AuthenticatedRequest, res: R
     } catch (error: any) {
         const status = error.message === "Incorrect current password" ? 400 : 500;
         return res.status(status).json({ message: error.message || "Internal server error." });
+    }
+};
+
+
+
+export const userSelfDeactivateController = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+        const userId = req.userId; // Provided by your authenticateJWT
+        if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+        await userSelfDeactivateService(userId);
+        
+        return res.status(200).json({ message: "Your account has been deactivated." });
+    } catch (error) {
+        return res.status(500).json({ message: "Internal server error." });
+    }
+};
+
+
+//note: admin again need to move this
+export const adminUpdateStatusController = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params; // The ID of the user being managed
+        const parsed = UpdateStatusSchema.safeParse(req.body);
+        
+        if (!parsed.success) return res.status(400).json({ errors: parsed.error.issues });
+
+        const updatedUser = await adminUpdateStatusService(id, parsed.data.isActive);
+        
+        return res.status(200).json({ 
+            message: `User status updated to ${parsed.data.isActive}`,
+            user: { id: updatedUser.id, status: updatedUser.isActive }
+        });
+    } catch (error) {
+        return res.status(500).json({ message: "Failed to update user status." });
+    }
+};
+
+export const adminHardDeleteController = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        await adminHardDeleteService(id);
+        return res.status(200).json({ message: "User permanently deleted from system." });
+    } catch (error) {
+        return res.status(400).json({ message: "Cannot delete user. They may have active records/assignments." });
     }
 };
