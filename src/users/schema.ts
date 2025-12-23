@@ -143,7 +143,7 @@ export const ForgotPasswordInputSchema = z.object({
 export type ForgotPasswordInputType = z.infer<typeof ForgotPasswordInputSchema>;
 
 export const ResetPasswordInputSchema = z.object({
-  token: z.string().min(3, "Token is required."),
+  passresettoken: z.string().min(3, "Token is required."),
   password: z.string().min(8, "Password must be at least 8 characters."),
 });
 export type ResetPasswordInputType = z.infer<typeof ResetPasswordInputSchema>;
@@ -167,4 +167,10 @@ export type ChangePasswordInput = z.infer<typeof ChangePasswordSchema>;
 
 export const UpdateStatusSchema = z.object({
   isActive: isActiveEnum,
+});
+
+
+
+export const RequestEmailChangeSchema = z.object({
+  newEmail: z.string().email("Invalid email address"),
 });

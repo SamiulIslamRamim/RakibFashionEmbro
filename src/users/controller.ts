@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
-import { SignupInputSchema, LoginInputSchema, VerifyInputSchema, UserUpdateInputSchema, ForgotPasswordInputSchema, ResetPasswordInputSchema, ChangePasswordSchema, UpdateStatusSchema } from "#users/schema.ts"; 
-import { registerUserService, loginUserService, verifyUserService, updateUserService, adminUpdateUserService, forgotPasswordService, checkResetTokenService, resetPasswordService, changePasswordService, userSelfDeactivateService, adminUpdateStatusService, adminHardDeleteService} from "#users/service.ts";
+import { SignupInputSchema, LoginInputSchema, VerifyInputSchema, UserUpdateInputSchema, ForgotPasswordInputSchema, ResetPasswordInputSchema, ChangePasswordSchema, UpdateStatusSchema, RequestEmailChangeSchema,  } from "#users/schema.ts"; 
+import { registerUserService, loginUserService, verifyUserService, updateUserService, adminUpdateUserService, forgotPasswordService, checkResetTokenService, resetPasswordService, changePasswordService, userSelfDeactivateService, adminUpdateStatusService, adminHardDeleteService, requestEmailUpdateService, confirmEmailUpdateService, } from "#users/service.ts";
 import type { SignupInputType, VerifyInputType, ForgotPasswordInputType, ResetPasswordInputType } from "#users/schema.ts";
 import prisma from "#utils/db.ts";
 import type { AuthenticatedRequest } from "#utils/auth.ts";
@@ -188,7 +188,7 @@ export const adminUpdateController = async (req: Request, res: Response) => {
 
 
 
-//TODO: forgot/reset password controller
+//TODO: forgot/reset & password & emailUpdate controller
 
 
 //forgetPassword controller
@@ -206,12 +206,12 @@ export const forgotPasswordController = async (req: Request, res: Response) => {
 
 //verifyResetToken controller
 export const verifyResetTokenController = async (req: Request, res: Response) => {
-    const { token } = req.params;
+    const { passresettoken } = req.params;
     try {
-        const isValid = await checkResetTokenService(token);
-        if (!isValid) return res.status(400).json({ valid: false, message: "Token is invalid or expired." });
+        const isValid = await checkResetTokenService(passresettoken);
+        if (!isValid) return res.status(400).json({ valid: false, message: "passresetToken is invalid or expired." });
         
-        return res.status(200).json({ valid: true, message: "Token is valid." });
+        return res.status(200).json({ valid: true, message: "passresetToken is valid." });
     } catch (error) {
         return res.status(500).json({ message: "Internal server error." });
     }
@@ -224,7 +224,7 @@ export const resetPasswordController = async (req: Request, res: Response) => {
         
         if (!parsed.success) return res.status(400).json({ errors: parsed.error.issues });
 
-        await resetPasswordService(parsed.data.token, parsed.data.password);
+        await resetPasswordService(parsed.data.passresettoken, parsed.data.password);
         return res.status(200).json({ message: "Password has been successfully updated." });
     } catch (error: any) {
         return res.status(400).json({ message: error.message || "Reset failed." });
@@ -261,8 +261,7 @@ export const changePasswordController = async (req: AuthenticatedRequest, res: R
     }
 };
 
-
-
+//userSelfDeactivate controller
 export const userSelfDeactivateController = async (req: AuthenticatedRequest, res: Response) => {
     try {
         const userId = req.userId; // Provided by your authenticateJWT
@@ -275,6 +274,45 @@ export const userSelfDeactivateController = async (req: AuthenticatedRequest, re
         return res.status(500).json({ message: "Internal server error." });
     }
 };
+
+//email update controllers
+export const requestEmailUpdateController = async (req: AuthenticatedRequest, res: Response) => {
+  const parsed = RequestEmailChangeSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ errors: parsed.error.issues });
+  try {
+    await requestEmailUpdateService(req.userId!, parsed.data.newEmail);
+    return res.status(200).json({ message: "Verification links sent." });
+  } catch (error: any) {
+    return res.status(400).json({ error: error.message });
+  }
+};
+
+export const confirmEmailUpdateController = async (req: Request, res: Response) => {
+  const emailUpdatetoken = req.query.emailUpdatetoken as string;
+  if (!emailUpdatetoken) return res.status(400).json({ error: "emailUpdatetoken is required" });
+
+  try {
+    await confirmEmailUpdateService(emailUpdatetoken);
+    return res.status(200).json({ message: "Email updated successfully!" });
+  } catch (error: any) {
+    return res.status(400).json({ error: "Invalid or expired link." });
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 //note: admin again need to move this

@@ -21,10 +21,10 @@ interface SendOtpParams {
 
 export const sendOtp = async ({ to, otpCode, firstName }: SendOtpParams): Promise<void> => {
     // Development Mode Check (Keeps your log functionality)
-    if (process.env.NODE_ENV !== 'production') {
-        console.warn(`[DEV] OTP Code for ${to}: ${otpCode}`);
-        return;
-    }
+    // if (process.env.NODE_ENV !== 'production') {
+    //     console.warn(`[DEV] OTP Code for ${to}: ${otpCode}`);
+    //     return;
+    // }
 
     try {
         await transporter.sendMail({
